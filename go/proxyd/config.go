@@ -74,6 +74,21 @@ type Config struct {
 	WSMethodWhitelist []string            `toml:"ws_method_whitelist"`
 }
 
+type DaisyChainBackends struct {
+	Epoch1RPCURL string `toml:"epoch_1_rpc_url"`
+	Epoch2RPCURL string `toml:"epoch_2_rpc_url"`
+	Epoch3RPCURL string `toml:"epoch_3_rpc_url"`
+	Epoch4RPCURL string `toml:"epoch_4_rpc_url"`
+	Epoch5RPCURL string `toml:"epoch_5_rpc_url"`
+	Epoch6RPCURL string `toml:"epoch_6_rpc_url"`
+}
+
+type DaisyChainConfig struct {
+	Server   ServerConfig       `toml:"server"`
+	Backends DaisyChainBackends `toml:"backends"`
+	Metrics  MetricsConfig      `toml:"metrics"`
+}
+
 func ReadFromEnvOrConfig(value string) (string, error) {
 	if strings.HasPrefix(value, "$") {
 		envValue := os.Getenv(strings.TrimPrefix(value, "$"))
