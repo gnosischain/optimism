@@ -1,51 +1,40 @@
-/* External Imports */
 import { ethers } from 'hardhat'
-import { Contract, Signer, ContractFactory } from 'ethers'
+import { Contract, Signer } from 'ethers'
 
-/* Internal Imports */
 import { expect } from '../../../setup'
+import { deploy } from '../../../helpers'
 
 describe('ChugSplashDictator', () => {
-  let signer: Signer
-  let otherSigner: Signer
-  let signerAddress: string
-
-  let Factory__L1ChugSplashProxy: ContractFactory
-  let Factory__ChugSplashDictator: ContractFactory
+  let signer1: Signer
+  let signer2: Signer
   before(async () => {
-    ;[signer, otherSigner] = await ethers.getSigners()
-
-    Factory__L1ChugSplashProxy = await ethers.getContractFactory(
-      'L1ChugSplashProxy'
-    )
-
-    Factory__ChugSplashDictator = await ethers.getContractFactory(
-      'ChugSplashDictator'
-    )
-
-    signerAddress = await signer.getAddress()
+    ;[signer1, signer2] = await ethers.getSigners()
   })
 
   let L1ChugSplashProxy: Contract
   let ChugSplashDictator: Contract
   beforeEach(async () => {
-    L1ChugSplashProxy = await Factory__L1ChugSplashProxy.connect(signer).deploy(
-      signerAddress
-    )
+    L1ChugSplashProxy = await deploy('L1ChugSplashProxy', {
+      signer: signer1,
+      args: [await signer1.getAddress()],
+    })
 
-    ChugSplashDictator = await Factory__ChugSplashDictator.connect(
-      signer
-    ).deploy(
-      L1ChugSplashProxy.address,
-      signerAddress,
-      ethers.utils.keccak256('0x1111'),
-      ethers.utils.keccak256('0x1234'),
-      ethers.utils.keccak256('0x5678'),
-      ethers.utils.keccak256('0x1234'),
-      ethers.utils.keccak256('0x1234')
-    )
+    ChugSplashDictator = await deploy('ChugSplashDictator', {
+      signer: signer1,
+      args: [
+        L1ChugSplashProxy.address,
+        await signer1.getAddress(),
+        ethers.utils.keccak256('0x1111'),
+        ethers.utils.keccak256('0x1234'),
+        ethers.utils.keccak256('0x5678'),
+        ethers.utils.keccak256('0x1234'),
+        ethers.utils.keccak256('0x1234'),
+      ],
+    })
 
-    await L1ChugSplashProxy.connect(signer).setOwner(ChugSplashDictator.address)
+    await L1ChugSplashProxy.connect(signer1).setOwner(
+      ChugSplashDictator.address
+    )
   })
 
   describe('doActions', () => {
@@ -56,20 +45,20 @@ describe('ChugSplashDictator', () => {
     })
 
     it('should set the proxy code, storage & owner', async () => {
-      await expect(ChugSplashDictator.connect(signer).doActions('0x1111')).to
+      await expect(ChugSplashDictator.connect(signer1).doActions('0x1111')).to
         .not.be.reverted
     })
   })
 
   describe('returnOwnership', () => {
     it('should transfer contractc ownership to finalOwner', async () => {
-      await expect(ChugSplashDictator.connect(signer).returnOwnership()).to.not
+      await expect(ChugSplashDictator.connect(signer1).returnOwnership()).to.not
         .be.reverted
     })
 
     it('should revert when called by non-owner', async () => {
       await expect(
-        ChugSplashDictator.connect(otherSigner).returnOwnership()
+        ChugSplashDictator.connect(signer2).returnOwnership()
       ).to.be.revertedWith('ChugSplashDictator: only callable by finalOwner')
     })
   })
