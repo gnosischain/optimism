@@ -118,6 +118,26 @@ var argTypes = map[string][]reflect.Type{
 	},
 }
 
+// mapping of method to index of hash in rpc params
+var hashMethods = map[string]int{
+	"eth_getBalance":                           1,
+	"eth_getProof":                             2,
+	"eth_getBlockByHash":                       0,
+	"eth_getUncleByBlockHashAndIndex":          0,
+	"eth_getUncleCountByBlockHash":             0,
+	"eth_getCode":                              1,
+	"eth_getStorageAt":                         2,
+	"eth_call":                                 1,
+	"eth_estimateGas":                          2,
+	"eth_getBlockTransactionCountByHash":       0,
+	"eth_getTransactionByBlockHashAndIndex":    0,
+	"eth_getRawTransactionByBlockHashAndIndex": 0,
+	"eth_getTransactionCount":                  1,
+	"eth_getTransactionByHash":                 0,
+	"eth_getRawTransactionByHash":              0,
+	"eth_getTransactionReceipt":                0,
+}
+
 func NewDaisyChainServer(urls []string) *DaisyChainServer {
 	if len(urls) != 6 {
 		panic("must pass 6 urls")
@@ -245,6 +265,34 @@ func (s *DaisyChainServer) HandleRPC(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// if the method is in the hash type map and
+	// the item in the params is a hash
+	if index, ok := hashMethods[req.Method]; ok {
+		// TODO: argTypes doesn't have all required entries
+		argType, ok := argTypes[req.Method]
+		if !ok {
+			fmt.Println("ERROR")
+			return
+		}
+
+		values, err := parsePositionalArguments(req.Params, argType)
+		if err != nil {
+			res := NewRPCErrorRes(nil, err)
+			writeRPCRes(ctx, w, res)
+			return
+		}
+		param, ok := values[index].Interface().(rpc.BlockNumberOrHash)
+		if !ok {
+			writeRPCError(ctx, w, nil, errors.New(""))
+			return
+		}
+		if _, ok := param.Hash(); ok {
+			backendRes := s.handleHashTaggedRPC(ctx, req)
+			writeRPCRes(ctx, w, backendRes)
+			return
+		}
+	}
+
 	// See if the incoming method is in the list of methods
 	// that need to be proxied by observing the request options
 	argType, ok := argTypes[req.Method]
@@ -256,9 +304,11 @@ func (s *DaisyChainServer) HandleRPC(w http.ResponseWriter, r *http.Request) {
 		// We haven't completely derisked the diff to geth it
 		// is to have non contiguous block data
 		if s.epoch6RPCURL == "" {
+			log.Error("Request for latest epoch cannot be handled")
 			writeRPCError(ctx, w, nil, errors.New("must configure epoch 6 url"))
 			return
 		}
+
 		backendRes := s.handleSingleRPC(ctx, s.epoch6RPCURL, req)
 		writeRPCRes(ctx, w, backendRes)
 		return
@@ -266,7 +316,9 @@ func (s *DaisyChainServer) HandleRPC(w http.ResponseWriter, r *http.Request) {
 
 	values, err := parsePositionalArguments(req.Params, argType)
 	if err != nil {
-		writeRPCError(ctx, w, nil, err)
+		log.Error("Cannot parse JSON RPC arguments")
+		res := NewRPCErrorRes(nil, err)
+		writeRPCRes(ctx, w, res)
 		return
 	}
 
@@ -411,8 +463,6 @@ func (s *DaisyChainServer) handleSingleRPC(ctx context.Context, url string, req 
 		return NewRPCErrorRes(nil, err)
 	}
 
-	fmt.Printf("#%v\n", req)
-
 	body := mustMarshalJSON(req)
 	httpReq, err := http.NewRequest("POST", url, bytes.NewReader(body))
 	if err != nil {
@@ -434,6 +484,27 @@ func (s *DaisyChainServer) handleSingleRPC(ctx context.Context, url string, req 
 	}
 
 	return backendRes
+}
+
+// Tries each rpc url one after another
+func (s *DaisyChainServer) handleHashTaggedRPC(ctx context.Context, req *RPCReq) *RPCRes {
+	urls := []string{
+		s.epoch6RPCURL,
+		s.epoch5RPCURL,
+		s.epoch4RPCURL,
+		s.epoch3RPCURL,
+		s.epoch2RPCURL,
+		s.epoch1RPCURL,
+	}
+
+	var res *RPCRes
+	for _, url := range urls {
+		res = s.handleSingleRPC(ctx, url, req)
+		if !res.IsError() {
+			break
+		}
+	}
+	return res
 }
 
 // parsePositionalArguments tries to parse the given args to an array of values with the
