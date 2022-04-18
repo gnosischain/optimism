@@ -2,7 +2,10 @@ package batchsubmitter
 
 import (
 	"context"
+	"fmt"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/ethereum-optimism/optimism/go/batch-submitter/drivers/proposer"
@@ -92,9 +95,14 @@ func Main(gitVersion string) func(ctx *cli.Context) error {
 
 		// Connect to L1 and L2 providers. Perform these last since they are the
 		// most expensive.
-		l1Client, err := dial.L1EthClientWithTimeout(ctx, cfg.L1EthRpc, cfg.DisableHTTP2)
-		if err != nil {
-			return err
+		l1Endpoints := strings.Split(cfg.L1EthRpc, ",")
+		var l1Clients []*ethclient.Client
+		for _, l1Endpoint := range l1Endpoints {
+			l1Client, err := dial.L1EthClientWithTimeout(ctx, l1Endpoint, cfg.DisableHTTP2)
+			if err != nil {
+				return err
+			}
+			l1Clients = append(l1Clients, l1Client)
 		}
 
 		l2Client, err := DialL2EthClientWithTimeout(ctx, cfg.L2EthRpc, cfg.DisableHTTP2)
@@ -106,11 +114,6 @@ func Main(gitVersion string) func(ctx *cli.Context) error {
 			go metrics.RunServer(cfg.MetricsHostname, cfg.MetricsPort)
 		}
 
-		chainID, err := l1Client.ChainID(ctx)
-		if err != nil {
-			return err
-		}
-
 		txManagerConfig := txmgr.Config{
 			ResubmissionTimeout:       cfg.ResubmissionTimeout,
 			ReceiptQueryInterval:      time.Second,
@@ -119,58 +122,65 @@ func Main(gitVersion string) func(ctx *cli.Context) error {
 		}
 
 		var services []*bsscore.Service
-		if cfg.RunTxBatchSubmitter {
-			batchTxDriver, err := sequencer.NewDriver(sequencer.Config{
-				Name:        "Sequencer",
-				L1Client:    l1Client,
-				L2Client:    l2Client,
-				BlockOffset: cfg.BlockOffset,
-				MinTxSize:   cfg.MinL1TxSize,
-				MaxTxSize:   cfg.MaxL1TxSize,
-				CTCAddr:     ctcAddress,
-				ChainID:     chainID,
-				PrivKey:     sequencerPrivKey,
-				BatchType:   sequencer.BatchTypeFromString(cfg.SequencerBatchType),
-			})
+		for _, l1Client := range l1Clients {
+			chainID, err := l1Client.ChainID(ctx)
 			if err != nil {
 				return err
 			}
 
-			services = append(services, bsscore.NewService(bsscore.ServiceConfig{
-				Context:         ctx,
-				Driver:          batchTxDriver,
-				PollInterval:    cfg.PollInterval,
-				ClearPendingTx:  cfg.ClearPendingTxs,
-				L1Client:        l1Client,
-				TxManagerConfig: txManagerConfig,
-			}))
-		}
+			if cfg.RunTxBatchSubmitter {
+				batchTxDriver, err := sequencer.NewDriver(sequencer.Config{
+					Name:        fmt.Sprintf("Sequencer-%s", chainID.String()),
+					L1Client:    l1Client,
+					L2Client:    l2Client,
+					BlockOffset: cfg.BlockOffset,
+					MinTxSize:   cfg.MinL1TxSize,
+					MaxTxSize:   cfg.MaxL1TxSize,
+					CTCAddr:     ctcAddress,
+					ChainID:     chainID,
+					PrivKey:     sequencerPrivKey,
+					BatchType:   sequencer.BatchTypeFromString(cfg.SequencerBatchType),
+				})
+				if err != nil {
+					return err
+				}
 
-		if cfg.RunStateBatchSubmitter {
-			batchStateDriver, err := proposer.NewDriver(proposer.Config{
-				Name:                 "Proposer",
-				L1Client:             l1Client,
-				L2Client:             l2Client,
-				BlockOffset:          cfg.BlockOffset,
-				MinStateRootElements: cfg.MinStateRootElements,
-				MaxStateRootElements: cfg.MaxStateRootElements,
-				SCCAddr:              sccAddress,
-				CTCAddr:              ctcAddress,
-				ChainID:              chainID,
-				PrivKey:              proposerPrivKey,
-			})
-			if err != nil {
-				return err
+				services = append(services, bsscore.NewService(bsscore.ServiceConfig{
+					Context:         ctx,
+					Driver:          batchTxDriver,
+					PollInterval:    cfg.PollInterval,
+					ClearPendingTx:  cfg.ClearPendingTxs,
+					L1Client:        l1Client,
+					TxManagerConfig: txManagerConfig,
+				}))
 			}
 
-			services = append(services, bsscore.NewService(bsscore.ServiceConfig{
-				Context:         ctx,
-				Driver:          batchStateDriver,
-				PollInterval:    cfg.PollInterval,
-				ClearPendingTx:  cfg.ClearPendingTxs,
-				L1Client:        l1Client,
-				TxManagerConfig: txManagerConfig,
-			}))
+			if cfg.RunStateBatchSubmitter {
+				batchStateDriver, err := proposer.NewDriver(proposer.Config{
+					Name:                 "Proposer",
+					L1Client:             l1Client,
+					L2Client:             l2Client,
+					BlockOffset:          cfg.BlockOffset,
+					MinStateRootElements: cfg.MinStateRootElements,
+					MaxStateRootElements: cfg.MaxStateRootElements,
+					SCCAddr:              sccAddress,
+					CTCAddr:              ctcAddress,
+					ChainID:              chainID,
+					PrivKey:              proposerPrivKey,
+				})
+				if err != nil {
+					return err
+				}
+
+				services = append(services, bsscore.NewService(bsscore.ServiceConfig{
+					Context:         ctx,
+					Driver:          batchStateDriver,
+					PollInterval:    cfg.PollInterval,
+					ClearPendingTx:  cfg.ClearPendingTxs,
+					L1Client:        l1Client,
+					TxManagerConfig: txManagerConfig,
+				}))
+			}
 		}
 
 		batchSubmitter, err := bsscore.NewBatchSubmitter(ctx, cancel, services)
