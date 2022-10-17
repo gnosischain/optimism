@@ -85,11 +85,24 @@ export class MessageRelayerService extends BaseServiceV2<
       this.options.l1RpcProvider
     )
 
+    // https://github.com/ethereum-optimism/optimism/blob/develop/specs/withdrawals.md
     this.state.messenger = new CrossChainMessenger({
       l1SignerOrProvider: this.state.wallet,
       l2SignerOrProvider: this.options.l2RpcProvider,
       l1ChainId: await getChainId(this.state.wallet.provider),
       l2ChainId: await getChainId(this.options.l2RpcProvider),
+      contracts: {
+         l1: {
+           AddressManager: "0xd703A4fCc80F5F6De86D16B8c9Ba935E9625d944",
+           L1CrossDomainMessenger: "0x6A52b1dbE0293F1ba1bc136b0f8C8f0395F940b9",
+           L1StandardBridge: "0x3804bA4ecC886AAe91A6D57dE880616E17C8269C",
+           StateCommitmentChain: "0x5929bbDFDC3955742dc86A95Ea9f59074F681da9",
+           CanonicalTransactionChain: "0x636434F59e52D50423bD8272FEB3B2bff5dF586b",
+           BondManager: "0x730fE4431a00286Ff8dc7E9B03c661E63Ef05121",
+           OptimismPortal: "", // TODO review
+           L2OutputOracle: "0x420000000000000000000000000000000000000F" // TODO review
+         }
+      }
     })
 
     this.state.highestCheckedL2Tx = this.options.fromL2TransactionIndex || 1

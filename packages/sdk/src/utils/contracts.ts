@@ -109,8 +109,8 @@ export const getAllOEContracts = (
       StateCommitmentChain: undefined,
       CanonicalTransactionChain: undefined,
       BondManager: undefined,
-      OptimismPortal: undefined,
-      L2OutputOracle: undefined,
+      OptimismPortal: undefined, // TODO review
+      L2OutputOracle: undefined, // TODO review
     },
     l2: DEFAULT_L2_CONTRACT_ADDRESSES,
   }
