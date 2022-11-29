@@ -1,0 +1,19 @@
+---
+name: Changeset integrity checker
+on:
+  push:
+    branches-ignore:
+      - bicocca-l2geth-patches
+
+jobs:
+  changesets-integrity-checker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install Dependencies
+        run: yarn
+
+      - name: Changeset Status
+        run: npx changeset status
