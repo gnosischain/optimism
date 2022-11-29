@@ -599,43 +599,44 @@ func (jst *Tracer) CaptureEnd(output []byte, gasUsed uint64, t time.Duration, er
 
 // GetResult calls the Javascript 'result' function and returns its value, or any accumulated error
 func (jst *Tracer) GetResult() (json.RawMessage, error) {
+	return nil, nil
 	// Transform the context into a JavaScript object and inject into the state
-	obj := jst.vm.PushObject()
+	// obj := jst.vm.PushObject()
 
-	for key, val := range jst.ctx {
-		switch val := val.(type) {
-		case uint64:
-			jst.vm.PushUint(uint(val))
+	// for key, val := range jst.ctx {
+	// 	switch val := val.(type) {
+	// 	case uint64:
+	// 		jst.vm.PushUint(uint(val))
 
-		case string:
-			jst.vm.PushString(val)
+	// 	case string:
+	// 		jst.vm.PushString(val)
 
-		case []byte:
-			ptr := jst.vm.PushFixedBuffer(len(val))
-			copy(makeSlice(ptr, uint(len(val))), val)
+	// 	case []byte:
+	// 		ptr := jst.vm.PushFixedBuffer(len(val))
+	// 		copy(makeSlice(ptr, uint(len(val))), val)
 
-		case common.Address:
-			ptr := jst.vm.PushFixedBuffer(20)
-			copy(makeSlice(ptr, 20), val[:])
+	// 	case common.Address:
+	// 		ptr := jst.vm.PushFixedBuffer(20)
+	// 		copy(makeSlice(ptr, 20), val[:])
 
-		case *big.Int:
-			pushBigInt(val, jst.vm)
+	// 	case *big.Int:
+	// 		pushBigInt(val, jst.vm)
 
-		default:
-			panic(fmt.Sprintf("unsupported type: %T", val))
-		}
-		jst.vm.PutPropString(obj, key)
-	}
-	jst.vm.PutPropString(jst.stateObject, "ctx")
+	// 	default:
+	// 		panic(fmt.Sprintf("unsupported type: %T", val))
+	// 	}
+	// 	jst.vm.PutPropString(obj, key)
+	// }
+	// jst.vm.PutPropString(jst.stateObject, "ctx")
 
-	// Finalize the trace and return the results
-	result, err := jst.call("result", "ctx", "db")
-	if err != nil {
-		jst.err = wrapError("result", err)
-	}
-	// Clean up the JavaScript environment
-	jst.vm.DestroyHeap()
-	jst.vm.Destroy()
+	// // Finalize the trace and return the results
+	// result, err := jst.call("result", "ctx", "db")
+	// if err != nil {
+	// 	jst.err = wrapError("result", err)
+	// }
+	// // Clean up the JavaScript environment
+	// jst.vm.DestroyHeap()
+	// jst.vm.Destroy()
 
-	return result, jst.err
+	// return result, jst.err
 }
