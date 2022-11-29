@@ -157,33 +157,33 @@
 
 	// fault is invoked when the actual execution of an opcode fails.
 	fault: function(log, db) {
-		// If the topmost call already reverted, don't handle the additional fault again
-		if (this.callstack[this.callstack.length - 1].error !== undefined) {
-			return;
-		}
-		// Pop off the just failed call
-		var call = this.callstack.pop();
-		call.error = log.getError();
+		// // If the topmost call already reverted, don't handle the additional fault again
+		// if (this.callstack[this.callstack.length - 1].error !== undefined) {
+		// 	return;
+		// }
+		// // Pop off the just failed call
+		// var call = this.callstack.pop();
+		// call.error = log.getError();
 
-		// Consume all available gas and clean any leftovers
-		if (call.gas !== undefined) {
-			call.gas = '0x' + bigInt(call.gas).toString(16);
-			call.gasUsed = call.gas
-		}
-		delete call.gasIn; delete call.gasCost;
-		delete call.outOff; delete call.outLen;
+		// // Consume all available gas and clean any leftovers
+		// if (call.gas !== undefined) {
+		// 	call.gas = '0x' + bigInt(call.gas).toString(16);
+		// 	call.gasUsed = call.gas
+		// }
+		// delete call.gasIn; delete call.gasCost;
+		// delete call.outOff; delete call.outLen;
 
-		// Flatten the failed call into its parent
-		var left = this.callstack.length;
-		if (left > 0) {
-			if (this.callstack[left-1].calls === undefined) {
-				this.callstack[left-1].calls = [];
-			}
-			this.callstack[left-1].calls.push(call);
-			return;
-		}
-		// Last call failed too, leave it in the stack
-		this.callstack.push(call);
+		// // Flatten the failed call into its parent
+		// var left = this.callstack.length;
+		// if (left > 0) {
+		// 	if (this.callstack[left-1].calls === undefined) {
+		// 		this.callstack[left-1].calls = [];
+		// 	}
+		// 	this.callstack[left-1].calls.push(call);
+		// 	return;
+		// }
+		// // Last call failed too, leave it in the stack
+		// this.callstack.push(call);
 	},
 
 	// result is invoked when all the opcodes have been iterated over and returns
