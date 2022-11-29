@@ -5,8 +5,9 @@ pkg := bindings
 all: version mkdir bindings more
 
 bindings: l1block-bindings \
+	system-config-bindings \
 	l1-cross-domain-messenger-bindings \
-  	l1-standard-bridge-bindings \
+	l1-standard-bridge-bindings \
 	l2-to-l1-message-passer-bindings \
 	optimism-portal-bindings \
 	l2-output-oracle-bindings \
@@ -22,7 +23,12 @@ bindings: l1block-bindings \
 	proxy-admin-bindings \
 	erc20-bindings \
 	weth9-bindings \
-	deployer-whitelist-bindings
+	deployer-whitelist-bindings \
+	l2-erc721-bridge-bindings \
+	l1-erc721-bridge-bindings \
+	optimism-mintable-erc721-factory-bindings \
+	l1-fee-vault-bindings \
+	basefee-vault-bindings
 
 version:
 	forge --version
@@ -31,6 +37,9 @@ compile:
 	cd ../packages/contracts-bedrock/ && \
 		yarn clean && \
 		npx hardhat compile
+
+system-config-bindings: compile
+	./gen_bindings.sh contracts/L1/SystemConfig.sol:SystemConfig $(pkg)
 
 l1-cross-domain-messenger-bindings: compile
 	./gen_bindings.sh contracts/L1/L1CrossDomainMessenger.sol:L1CrossDomainMessenger $(pkg)
@@ -62,8 +71,23 @@ l2-cross-domain-messenger-bindings: compile
 l2-standard-bridge-bindings: compile
 	./gen_bindings.sh contracts/L2/L2StandardBridge.sol:L2StandardBridge $(pkg)
 
+l2-erc721-bridge-bindings:
+	./gen_bindings.sh contracts/L2/L2ERC721Bridge.sol:L2ERC721Bridge $(pkg)
+
+l1-erc721-bridge-bindings:
+	./gen_bindings.sh contracts/L1/L1ERC721Bridge.sol:L1ERC721Bridge $(pkg)
+
+optimism-mintable-erc721-factory-bindings:
+	./gen_bindings.sh contracts/universal/OptimismMintableERC721Factory.sol:OptimismMintableERC721Factory $(pkg)
+
 sequencer-fee-vault-bindings: compile
 	./gen_bindings.sh contracts/L2/SequencerFeeVault.sol:SequencerFeeVault $(pkg)
+
+basefee-vault-bindings: compile
+	./gen_bindings.sh contracts/L2/BaseFeeVault.sol:BaseFeeVault $(pkg)
+
+l1-fee-vault-bindings: compile
+	./gen_bindings.sh contracts/L2/L1FeeVault.sol:L1FeeVault $(pkg)
 
 optimism-mintable-erc20-factory-bindings: compile
 	./gen_bindings.sh contracts/universal/OptimismMintableERC20Factory.sol:OptimismMintableERC20Factory $(pkg)
@@ -96,7 +120,7 @@ more:
 	go run ./gen/main.go \
 		-artifacts ../packages/contracts-bedrock/artifacts \
 		-out ./bindings \
-		-contracts OptimismMintableERC20Factory,L2StandardBridge,L1BlockNumber,LegacyMessagePasser,DeployerWhitelist,Proxy,OptimismPortal,L2ToL1MessagePasser,L2CrossDomainMessenger,GasPriceOracle,SequencerFeeVault,L1Block,LegacyERC20ETH,WETH9,GovernanceToken,L1CrossDomainMessenger \
+		-contracts SystemConfig,OptimismMintableERC20Factory,L2StandardBridge,L1BlockNumber,LegacyMessagePasser,DeployerWhitelist,Proxy,OptimismPortal,L2ToL1MessagePasser,L2CrossDomainMessenger,GasPriceOracle,SequencerFeeVault,L1Block,LegacyERC20ETH,WETH9,GovernanceToken,L1CrossDomainMessenger,L2ERC721Bridge,OptimismMintableERC721Factory,ProxyAdmin \
 		-package bindings
 
 mkdir:

@@ -2,6 +2,7 @@ package immutables
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/core/types"
 
@@ -54,6 +55,21 @@ func BuildOptimism(immutable ImmutableConfig) (DeploymentResults, error) {
 		},
 		{
 			Name: "SequencerFeeVault",
+			Args: []interface{}{
+				immutable["SequencerFeeVault"]["recipient"],
+			},
+		},
+		{
+			Name: "BaseFeeVault",
+			Args: []interface{}{
+				immutable["BaseFeeVault"]["recipient"],
+			},
+		},
+		{
+			Name: "L1FeeVault",
+			Args: []interface{}{
+				immutable["L1FeeVault"]["recipient"],
+			},
 		},
 		{
 			Name: "OptimismMintableERC20Factory",
@@ -66,6 +82,20 @@ func BuildOptimism(immutable ImmutableConfig) (DeploymentResults, error) {
 		},
 		{
 			Name: "L1BlockNumber",
+		},
+		{
+			Name: "L2ERC721Bridge",
+			Args: []interface{}{
+				predeploys.L2CrossDomainMessengerAddr,
+				immutable["L2ERC721Bridge"]["otherBridge"],
+			},
+		},
+		{
+			Name: "OptimismMintableERC721Factory",
+			Args: []interface{}{
+				predeploys.L2ERC721BridgeAddr,
+				immutable["OptimismMintableERC721Factory"]["remoteChainId"],
+			},
 		},
 	}
 	return BuildL2(deployments)
@@ -91,10 +121,7 @@ func l2Deployer(backend *backends.SimulatedBackend, opts *bind.TransactOpts, dep
 	var err error
 	switch deployment.Name {
 	case "GasPriceOracle":
-		// The owner of the gas price oracle is not immutable, not required
-		// to be set here. It cannot be `address(0)`
-		owner := common.Address{1}
-		_, tx, _, err = bindings.DeployGasPriceOracle(opts, backend, owner)
+		_, tx, _, err = bindings.DeployGasPriceOracle(opts, backend)
 	case "L1Block":
 		// No arguments required for the L1Block contract
 		_, tx, _, err = bindings.DeployL1Block(opts, backend)
@@ -114,8 +141,23 @@ func l2Deployer(backend *backends.SimulatedBackend, opts *bind.TransactOpts, dep
 		// No arguments required for L2ToL1MessagePasser
 		_, tx, _, err = bindings.DeployL2ToL1MessagePasser(opts, backend)
 	case "SequencerFeeVault":
-		// No arguments to SequencerFeeVault
-		_, tx, _, err = bindings.DeploySequencerFeeVault(opts, backend)
+		recipient, ok := deployment.Args[0].(common.Address)
+		if !ok {
+			return nil, fmt.Errorf("invalid type for recipient")
+		}
+		_, tx, _, err = bindings.DeploySequencerFeeVault(opts, backend, recipient)
+	case "BaseFeeVault":
+		recipient, ok := deployment.Args[0].(common.Address)
+		if !ok {
+			return nil, fmt.Errorf("invalid type for recipient")
+		}
+		_, tx, _, err = bindings.DeployBaseFeeVault(opts, backend, recipient)
+	case "L1FeeVault":
+		recipient, ok := deployment.Args[0].(common.Address)
+		if !ok {
+			return nil, fmt.Errorf("invalid type for recipient")
+		}
+		_, tx, _, err = bindings.DeployL1FeeVault(opts, backend, recipient)
 	case "OptimismMintableERC20Factory":
 		_, tx, _, err = bindings.DeployOptimismMintableERC20Factory(opts, backend, predeploys.L2StandardBridgeAddr)
 	case "DeployerWhitelist":
@@ -124,6 +166,27 @@ func l2Deployer(backend *backends.SimulatedBackend, opts *bind.TransactOpts, dep
 		_, tx, _, err = bindings.DeployLegacyMessagePasser(opts, backend)
 	case "L1BlockNumber":
 		_, tx, _, err = bindings.DeployL1BlockNumber(opts, backend)
+	case "L2ERC721Bridge":
+		// TODO(tynes): messenger should be hardcoded in the contract
+		messenger, ok := deployment.Args[0].(common.Address)
+		if !ok {
+			return nil, fmt.Errorf("invalid type for messenger")
+		}
+		otherBridge, ok := deployment.Args[1].(common.Address)
+		if !ok {
+			return nil, fmt.Errorf("invalid type for otherBridge")
+		}
+		_, tx, _, err = bindings.DeployL2ERC721Bridge(opts, backend, messenger, otherBridge)
+	case "OptimismMintableERC721Factory":
+		bridge, ok := deployment.Args[0].(common.Address)
+		if !ok {
+			return nil, fmt.Errorf("invalid type for bridge")
+		}
+		remoteChainId, ok := deployment.Args[1].(*big.Int)
+		if !ok {
+			return nil, fmt.Errorf("invalid type for remoteChainId")
+		}
+		_, tx, _, err = bindings.DeployOptimismMintableERC721Factory(opts, backend, bridge, remoteChainId)
 	default:
 		return tx, fmt.Errorf("unknown contract: %s", deployment.Name)
 	}

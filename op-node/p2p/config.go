@@ -14,13 +14,13 @@ import (
 	ds "github.com/ipfs/go-datastore"
 	"github.com/ipfs/go-datastore/sync"
 	leveldb "github.com/ipfs/go-ds-leveldb"
-	core "github.com/libp2p/go-libp2p-core"
-	"github.com/libp2p/go-libp2p-core/connmgr"
-	"github.com/libp2p/go-libp2p-core/crypto"
-	"github.com/libp2p/go-libp2p-core/host"
-	"github.com/libp2p/go-libp2p-core/metrics"
-	"github.com/libp2p/go-libp2p-core/peer"
 	lconf "github.com/libp2p/go-libp2p/config"
+	core "github.com/libp2p/go-libp2p/core"
+	"github.com/libp2p/go-libp2p/core/connmgr"
+	"github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/libp2p/go-libp2p/core/host"
+	"github.com/libp2p/go-libp2p/core/metrics"
+	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/p2p/muxer/mplex"
 	"github.com/libp2p/go-libp2p/p2p/muxer/yamux"
 	"github.com/libp2p/go-libp2p/p2p/net/conngater"
@@ -30,18 +30,19 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	"github.com/urfave/cli"
 
-	"github.com/ethereum-optimism/optimism/op-node/flags"
-	"github.com/ethereum-optimism/optimism/op-node/rollup"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/p2p/discover"
 	"github.com/ethereum/go-ethereum/p2p/enode"
+
+	"github.com/ethereum-optimism/optimism/op-node/flags"
+	"github.com/ethereum-optimism/optimism/op-node/rollup"
 )
 
 // SetupP2P provides a host and discovery service for usage in the rollup node.
 type SetupP2P interface {
 	Check() error
 	// Host creates a libp2p host service. Returns nil, nil if p2p is disabled.
-	Host(log log.Logger) (host.Host, error)
+	Host(log log.Logger, reporter metrics.Reporter) (host.Host, error)
 	// Discovery creates a disc-v5 service. Returns nil, nil, nil if discovery is disabled.
 	Discovery(log log.Logger, rollupCfg *rollup.Config, tcpPort uint16) (*enode.LocalNode, *discover.UDPv5, error)
 	TargetPeers() uint
@@ -91,8 +92,6 @@ type Config struct {
 
 	ConnGater func(conf *Config) (connmgr.ConnectionGater, error)
 	ConnMngr  func(conf *Config) (connmgr.ConnManager, error)
-	// nil to disable bandwidth metrics
-	BandwidthMetrics metrics.Reporter
 }
 
 type ConnectionGater interface {

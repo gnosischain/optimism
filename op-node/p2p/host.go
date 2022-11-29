@@ -6,12 +6,13 @@ import (
 	"net"
 	"time"
 
-	"github.com/libp2p/go-libp2p-core/connmgr"
-	"github.com/libp2p/go-libp2p-core/host"
-	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/libp2p/go-libp2p-peerstore/pstoreds"
 	lconf "github.com/libp2p/go-libp2p/config"
+	"github.com/libp2p/go-libp2p/core/connmgr"
+	"github.com/libp2p/go-libp2p/core/host"
+	"github.com/libp2p/go-libp2p/core/metrics"
+	"github.com/libp2p/go-libp2p/core/peer"
 	basichost "github.com/libp2p/go-libp2p/p2p/host/basic"
+	"github.com/libp2p/go-libp2p/p2p/host/peerstore/pstoreds"
 	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
 	ma "github.com/multiformats/go-multiaddr"
 	madns "github.com/multiformats/go-multiaddr-dns"
@@ -41,7 +42,7 @@ func (e *extraHost) ConnectionManager() connmgr.ConnManager {
 
 var _ ExtraHostFeatures = (*extraHost)(nil)
 
-func (conf *Config) Host(log log.Logger) (host.Host, error) {
+func (conf *Config) Host(log log.Logger, reporter metrics.Reporter) (host.Host, error) {
 	if conf.DisableP2P {
 		return nil, nil
 	}
@@ -115,7 +116,7 @@ func (conf *Config) Host(log log.Logger) (host.Host, error) {
 		ResourceManager:   nil, // TODO use resource manager interface to manage resources per peer better.
 		NATManager:        nat,
 		Peerstore:         ps,
-		Reporter:          conf.BandwidthMetrics, // may be nil if disabled
+		Reporter:          reporter, // may be nil if disabled
 		MultiaddrResolver: madns.DefaultResolver,
 		// Ping is a small built-in libp2p protocol that helps us check/debug latency between peers.
 		DisablePing:     false,

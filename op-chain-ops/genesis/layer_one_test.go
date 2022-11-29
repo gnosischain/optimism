@@ -42,24 +42,20 @@ func TestBuildL1DeveloperGenesis(t *testing.T) {
 	portal, err := bindings.NewOptimismPortal(predeploys.DevOptimismPortalAddr, sim)
 	require.NoError(t, err)
 
-	proposer, err := oracle.Proposer(callOpts)
+	proposer, err := oracle.PROPOSER(callOpts)
 	require.NoError(t, err)
 	require.Equal(t, config.L2OutputOracleProposer, proposer)
 
-	owner, err := oracle.Owner(callOpts)
+	owner, err := oracle.CHALLENGER(callOpts)
 	require.NoError(t, err)
-	require.Equal(t, config.L2OutputOracleOwner, owner)
+	require.Equal(t, config.L2OutputOracleChallenger, owner)
 
 	// Same set of tests as exist in the deployment scripts
 	interval, err := oracle.SUBMISSIONINTERVAL(callOpts)
 	require.NoError(t, err)
 	require.EqualValues(t, config.L2OutputOracleSubmissionInterval, interval.Uint64())
 
-	histBlocks, err := oracle.HISTORICALTOTALBLOCKS(callOpts)
-	require.NoError(t, err)
-	require.EqualValues(t, 0, histBlocks.Uint64())
-
-	startBlock, err := oracle.STARTINGBLOCKNUMBER(callOpts)
+	startBlock, err := oracle.StartingBlockNumber(callOpts)
 	require.NoError(t, err)
 	require.EqualValues(t, 0, startBlock.Uint64())
 
@@ -73,7 +69,7 @@ func TestBuildL1DeveloperGenesis(t *testing.T) {
 
 	msgr, err := bindings.NewL1CrossDomainMessenger(predeploys.DevL1CrossDomainMessengerAddr, sim)
 	require.NoError(t, err)
-	portalAddr, err := msgr.Portal(callOpts)
+	portalAddr, err := msgr.PORTAL(callOpts)
 	require.NoError(t, err)
 	require.Equal(t, predeploys.DevOptimismPortalAddr, portalAddr)
 
@@ -82,7 +78,7 @@ func TestBuildL1DeveloperGenesis(t *testing.T) {
 	msgrAddr, err := bridge.Messenger(callOpts)
 	require.NoError(t, err)
 	require.Equal(t, predeploys.DevL1CrossDomainMessengerAddr, msgrAddr)
-	otherBridge, err := bridge.OtherBridge(callOpts)
+	otherBridge, err := bridge.OTHERBRIDGE(callOpts)
 	require.NoError(t, err)
 	require.Equal(t, predeploys.L2StandardBridgeAddr, otherBridge)
 
@@ -91,6 +87,18 @@ func TestBuildL1DeveloperGenesis(t *testing.T) {
 	bridgeAddr, err := factory.Bridge(callOpts)
 	require.NoError(t, err)
 	require.Equal(t, predeploys.DevL1StandardBridgeAddr, bridgeAddr)
+
+	weth9, err := bindings.NewWETH9(predeploys.DevWETH9Addr, sim)
+	require.NoError(t, err)
+	decimals, err := weth9.Decimals(callOpts)
+	require.NoError(t, err)
+	require.Equal(t, uint8(18), decimals)
+	symbol, err := weth9.Symbol(callOpts)
+	require.NoError(t, err)
+	require.Equal(t, "WETH", symbol)
+	name, err := weth9.Name(callOpts)
+	require.NoError(t, err)
+	require.Equal(t, "Wrapped Ether", name)
 
 	// test that we can do deposits, etc.
 	priv, err := crypto.HexToECDSA("ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80")

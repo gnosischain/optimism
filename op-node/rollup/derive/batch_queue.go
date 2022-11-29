@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/ethereum/go-ethereum/log"
+
 	"github.com/ethereum-optimism/optimism/op-node/eth"
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
-	"github.com/ethereum/go-ethereum/log"
 )
 
 // The batch queue is responsible for ordering unordered batches & generating empty batches
@@ -59,7 +60,11 @@ func (bq *BatchQueue) Origin() eth.L1BlockRef {
 }
 
 func (bq *BatchQueue) NextBatch(ctx context.Context, safeL2Head eth.L2BlockRef) (*BatchData, error) {
-	originBehind := bq.origin.Number < safeL2Head.L1Origin.Number
+	// Note: We use the origin that we will have to determine if it's behind. This is important
+	// because it's the future origin that gets saved into the l1Blocks array.
+	// We always update the origin of this stage if it is not the same so after the update code
+	// runs, this is consistent.
+	originBehind := bq.prev.Origin().Number < safeL2Head.L1Origin.Number
 
 	// Advance origin if needed
 	// Note: The entire pipeline has the same origin
@@ -109,7 +114,7 @@ func (bq *BatchQueue) NextBatch(ctx context.Context, safeL2Head eth.L2BlockRef) 
 	return batch, nil
 }
 
-func (bq *BatchQueue) Reset(ctx context.Context, base eth.L1BlockRef) error {
+func (bq *BatchQueue) Reset(ctx context.Context, base eth.L1BlockRef, _ eth.SystemConfig) error {
 	// Copy over the Origin from the next stage
 	// It is set in the engine queue (two stages away) such that the L2 Safe Head origin is the progress
 	bq.origin = base
