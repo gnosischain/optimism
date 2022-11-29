@@ -80,9 +80,8 @@ jobs:
           node ops/scripts/ci-versions.js ${{ toJSON(steps.changesets.outputs.publishedPackages) }}
 
   l2geth:
-    name: Publish L2Geth Version ${{ needs.release.outputs.l2geth }}
+    name: Publish L2Geth Version
     needs: release
-    if: needs.release.outputs.l2geth != ''
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -97,13 +96,17 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
+      - name: Get Hash
+        id: hash
+        run: echo "git_hash=$(git rev-parse --short "$GITHUB_SHA")" >> $GITHUB_HASH
+
       - name: Publish L2Geth
         uses: docker/build-push-action@v2
         with:
           context: .
           file: ./l2geth/Dockerfile
           push: true
-          tags: gnosischain/l2geth:${{ needs.release.outputs.l2geth }},gnosischain/l2geth:latest
+          tags: gnosischain/l2geth:${{ env.hash }},gnosischain/l2geth:latest
 
   # gas-oracle:
   #   name: Publish Gas Oracle Version ${{ needs.release.outputs.gas-oracle }}
