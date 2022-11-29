@@ -2,7 +2,7 @@
 name: Changeset integrity checker
 on:
   push:
-    branches-ignore:
+    branches:
       - bicocca-l2geth-patches
 
 jobs:
