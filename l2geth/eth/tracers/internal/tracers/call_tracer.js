@@ -148,10 +148,13 @@
 			}
 			// Inject the call into the previous one
 			var left = this.callstack.length;
-			if (this.callstack[left-1].calls === undefined) {
-				this.callstack[left-1].calls = [];
-			}
-			this.callstack[left-1].calls.push(call);
+      if (this.callstack[left-1]) {
+        if (this.callstack[left-1].calls === undefined) {
+          this.callstack[left-1].calls = [];
+        }
+        this.callstack[left-1].calls.push(call);
+      }
+
 		}
 	},
 
@@ -200,14 +203,17 @@
 			output:  toHex(ctx.output),
 			time:    ctx.time,
 		};
-		if (this.callstack[0].calls !== undefined) {
-			result.calls = this.callstack[0].calls;
-		}
-		if (this.callstack[0].error !== undefined) {
-			result.error = this.callstack[0].error;
-		} else if (ctx.error !== undefined) {
-			result.error = ctx.error;
-		}
+    if (this.callstack && this.callstack[0]) {
+      if (this.callstack[0].calls !== undefined) {
+        result.calls = this.callstack[0].calls;
+      }
+      if (this.callstack[0].error !== undefined) {
+        result.error = this.callstack[0].error;
+      } else if (ctx.error !== undefined) {
+        result.error = ctx.error;
+      }
+    }
+
 		if (result.error !== undefined) {
 			delete result.output;
 		}
