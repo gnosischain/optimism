@@ -203,7 +203,8 @@
 			output:  toHex(ctx.output),
 			time:    ctx.time,
 		};
-    if (this.callstack && this.callstack[0]) {
+    var len = this.callstack.length
+    if (len > 1) {
       if (this.callstack[0].calls !== undefined) {
         result.calls = this.callstack[0].calls;
       }
