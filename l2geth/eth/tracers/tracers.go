@@ -21,7 +21,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/gnosischain/optimism/tracers"
+	tracers "github.com/gnosischain/l2tracers"
 )
 
 // all contains all the built in JavaScript tracers by name.
