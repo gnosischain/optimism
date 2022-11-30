@@ -12,7 +12,7 @@
 // trigram_tracer.js (1.788kB)
 // unigram_tracer.js (1.51kB)
 
-package main
+package tracers
 
 import (
 	"bytes"
