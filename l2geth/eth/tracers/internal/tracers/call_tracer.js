@@ -58,7 +58,7 @@
 		// If a contract is being self destructed, gather that as a subcall too
 		if (syscall && op == 'SELFDESTRUCT') {
 			var left = this.callstack.length;
-      if (left > 0) {
+      if (left > 1) {
         if (this.callstack[left-1].calls === undefined) {
           this.callstack[left-1].calls = [];
         }
@@ -150,7 +150,7 @@
 			}
 			// Inject the call into the previous one
 			var left = this.callstack.length;
-      if (left > 0) {
+      if (left > 1) {
         if (this.callstack[left-1].calls === undefined) {
           this.callstack[left-1].calls = [];
         }
@@ -180,7 +180,7 @@
 
 		// Flatten the failed call into its parent
 		var left = this.callstack.length;
-		if (left > 0) {
+		if (left > 1) {
 			if (this.callstack[left-1].calls === undefined) {
 				this.callstack[left-1].calls = [];
 			}
@@ -204,16 +204,19 @@
 			input:   toHex(ctx.input),
 			output:  toHex(ctx.output),
 			time:    ctx.time,
+      calls:   [],
 		};
     var len = this.callstack.length;
     if (len > 0) {
-      if (this.callstack[0].calls !== undefined) {
-        result.calls = this.callstack[0].calls;
-      }
-      if (this.callstack[0].error !== undefined) {
-        result.error = this.callstack[0].error;
-      } else if (ctx.error !== undefined) {
-        result.error = ctx.error;
+      if (this.callstack[0]) {
+        if (this.callstack[0].calls) {
+          result.calls = this.callstack[0].calls;
+        }
+        if (this.callstack[0].error) {
+          result.error = this.callstack[0].error;
+        } else if (ctx.error !== undefined) {
+          result.error = ctx.error;
+        }
       }
     }
 		if (result.error !== undefined) {
@@ -237,7 +240,7 @@
 			output:  call.output,
 			error:   call.error,
 			time:    call.time,
-			calls:   call.calls,
+			calls:   call.calls || [],
 		}
 		for (var key in sorted) {
 			if (sorted[key] === undefined) {
@@ -245,7 +248,7 @@
 			}
 		}
     if (sorted.calls) {
-      if (sorted.calls !== undefined) {
+      if (sorted.calls) {
         for (var i=0; i<sorted.calls.length; i++) {
           sorted.calls[i] = this.finalize(sorted.calls[i]);
         }
