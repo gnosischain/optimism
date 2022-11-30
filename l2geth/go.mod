@@ -21,7 +21,7 @@ require (
 	github.com/fatih/color v1.7.0
 	github.com/fjl/memsize v0.0.1
 	github.com/gballet/go-libpcsclite v0.0.0-20191108122812-4678299bea08
-	github.com/go-bindata/go-bindata v3.1.2+incompatible // indirect
+	github.com/gnosischain/l2tracers v0.0.0-20221130145434-48a9bdd4d741
 	github.com/go-kit/kit v0.10.0 // indirect
 	github.com/go-resty/resty/v2 v2.4.0
 	github.com/go-stack/stack v1.8.1
