@@ -55,17 +55,7 @@
 			this.descended = true
 			return;
 		}
-		// If a contract is being self destructed, gather that as a subcall too
-		// if (syscall && op == 'SELFDESTRUCT') {
-		// 	var left = this.callstack.length;
-    //   if (left > 1) {
-    //     if (this.callstack[left-1].calls === undefined) {
-    //       this.callstack[left-1].calls = [];
-    //     }
-    //     this.callstack[left-1].calls.push({type: op});
-    //   }
-		// 	return
-		// }
+
 		// If a new method invocation is being done, add to the call stack
 		if (syscall && (op == 'CALL' || op == 'CALLCODE' || op == 'DELEGATECALL' || op == 'STATICCALL')) {
 			// Skip any pre-compile invocations, those are just fancy opcodes
@@ -148,14 +138,6 @@
 			if (call.gas !== undefined) {
 				call.gas = '0x' + bigInt(call.gas).toString(16);
 			}
-			// Inject the call into the previous one
-			var left = this.callstack.length;
-      if (left > 1) {
-        if (this.callstack[left-1].calls === undefined) {
-          this.callstack[left-1].calls = [];
-        }
-        this.callstack[left-1].calls.push(call);
-      }
 
 		}
 	},
@@ -178,15 +160,6 @@
 		delete call.gasIn; delete call.gasCost;
 		delete call.outOff; delete call.outLen;
 
-		// // Flatten the failed call into its parent
-		// var left = this.callstack.length;
-		// if (left > 1) {
-		// 	if (this.callstack[left-1].calls === undefined) {
-		// 		this.callstack[left-1].calls = [];
-		// 	}
-		// 	this.callstack[left-1].calls.push(call);
-		// 	return;
-		// }
 		// Last call failed too, leave it in the stack
 		this.callstack.push(call);
 	},
@@ -206,19 +179,6 @@
 			time:    ctx.time,
       calls:   [],
 		};
-    // var len = this.callstack.length;
-    // if (len > 0) {
-    //   if (this.callstack[0]) {
-    //     if (this.callstack[0].calls) {
-    //       result.calls = this.callstack[0].calls;
-    //     }
-    //     if (this.callstack[0].error) {
-    //       result.error = this.callstack[0].error;
-    //     } else if (ctx.error !== undefined) {
-    //       result.error = ctx.error;
-    //     }
-    //   }
-    // }
     if (ctx.error !== undefined) {
       result.error = ctx.error;
     }
@@ -232,31 +192,6 @@
 	// serialization. This is a nicety feature to pass meaningfully ordered results
 	// to users who don't interpret it, just display it.
 	finalize: function(call) {
-		// var sorted = {
-		// 	type:    call.type,
-		// 	from:    call.from,
-		// 	to:      call.to,
-		// 	value:   call.value,
-		// 	gas:     call.gas,
-		// 	gasUsed: call.gasUsed,
-		// 	input:   call.input,
-		// 	output:  call.output,
-		// 	error:   call.error,
-		// 	time:    call.time,
-		// 	calls:   call.calls || [],
-		// }
-		// for (var key in sorted) {
-		// 	if (sorted[key] === undefined) {
-		// 		delete sorted[key];
-		// 	}
-		// }
-    // if (sorted.calls) {
-    //   if (sorted.calls) {
-    //     for (var i=0; i<sorted.calls.length; i++) {
-    //       sorted.calls[i] = this.finalize(sorted.calls[i]);
-    //     }
-    //   }
-    // }
 		return call;
 	}
 }
